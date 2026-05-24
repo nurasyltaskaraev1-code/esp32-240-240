@@ -1,0 +1,76 @@
+#include <TFT_eSPI.h>
+
+TFT_eSPI tft = TFT_eSPI();
+
+struct Eye {
+  int x, y;
+};
+
+Eye leftEye  = { 78, 120};
+Eye rightEye = {163, 120};
+
+int targetX = 120;
+int targetY = 120;
+unsigned long emotionTimer = 0;
+int currentEmotion = 0;
+
+void drawEyebrow(int x, int y, int offset, int emotion) {
+  int browY = y - 45;
+  int length = 38;
+  
+  if (emotion == 1) { 
+    tft.drawArc(x, browY + 8, length, length-8, 200, 340, TFT_BLACK, TFT_BLACK, 6);
+  }
+  else if (emotion == 3) { 
+    tft.drawLine(x - length/2, browY + 5, x + length/2 - 5, browY - 8, TFT_BLACK);
+    tft.drawLine(x - length/2 + 5, browY - 8, x + length/2, browY + 5, TFT_BLACK);
+  }
+  else { 
+    tft.drawLine(x - length/2, browY + offset, x + length/2, browY + offset - 3, TFT_BLACK);
+  }
+}
+
+void drawEye(int ex, int ey, int pupilX, int pupilY, int emotion) {
+  tft.fillEllipse(ex, ey, 48, 55, TFT_WHITE);
+  tft.drawEllipse(ex, ey, 48, 55, TFT_BLACK);
+  
+  tft.fillCircle(pupilX, pupilY, 19, TFT_BLACK);
+  tft.fillCircle(pupilX - 6, pupilY - 6, 8, TFT_NAVY);
+  tft.fillCircle(pupilX - 8, pupilY - 9, 6, TFT_WHITE);
+  
+  drawEyebrow(ex, ey, (emotion == 2 ? -8 : 0), emotion);
+}
+
+void setup() {
+  tft.init();
+  tft.setRotation(1);      // Попробуй 0, 1, 2, 3 по очереди
+  tft.fillScreen(TFT_BLACK);
+}
+
+void loop() {
+  // Стираем только область глаз (меньше мерцания)
+  tft.fillRect(20, 50, 200, 140, TFT_BLACK);
+
+  // Движение взгляда
+  targetX += random(-12, 13);
+  targetY += random(-10, 11);
+  
+  targetX = constrain(targetX, 50, 190);
+  targetY = constrain(targetY, 80, 160);
+
+  int pupilLeftX  = leftEye.x  + (targetX - leftEye.x) * 0.28;
+  int pupilLeftY  = leftEye.y  + (targetY - leftEye.y) * 0.28;
+  int pupilRightX = rightEye.x + (targetX - rightEye.x) * 0.28;
+  int pupilRightY = rightEye.y + (targetY - rightEye.y) * 0.28;
+
+  drawEye(leftEye.x,  leftEye.y,  pupilLeftX,  pupilLeftY,  currentEmotion);
+  drawEye(rightEye.x, rightEye.y, pupilRightX, pupilRightY, currentEmotion);
+
+  // Смена эмоций
+  if (millis() - emotionTimer > random(4000, 7000)) {
+    currentEmotion = random(0, 4);
+    emotionTimer = millis();
+  }
+
+  delay(35);
+}
